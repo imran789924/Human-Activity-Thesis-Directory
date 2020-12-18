@@ -2,31 +2,24 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('Final_Dataset_V1.csv')
-X = df.iloc[:,3:16]
-y = df.iloc[:, 1]
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 
 
+df = pd.read_csv('Final_Dataset_V3.csv')
+X = df.iloc[:, 0:12]
+y = df.iloc[:, 12]
 
-from sklearn.model_selection import train_test_split
 
-
-
-
-#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42,shuffle=False)
 
 '''
 train_pct_index = int(0.8 * len(X))
 X_train, X_test = X[:train_pct_index], X[train_pct_index:]
 y_train, y_test = y[:train_pct_index], y[train_pct_index:]
 '''
-
-from sklearn.preprocessing import RobustScaler
-
-scaler = RobustScaler()
-
-X_train = scaler.fit_transform(X)
-#X_test = scaler.fit_transform(X_test)
 
 
 
@@ -48,12 +41,13 @@ def create_dataset(X, y, time_steps=1, step=1):
 TIME_STEPS = 200
 STEP = 40
 
-X_train, y_train = create_dataset(
-    pd.DataFrame(X_train),
+X, y = create_dataset(
+    pd.DataFrame(X),
     y,
     TIME_STEPS,
     STEP
 )
+
 
 '''X_test, y_test = create_dataset(
     X_test,
@@ -61,21 +55,30 @@ X_train, y_train = create_dataset(
     TIME_STEPS,
     STEP
 )'''
-
+    
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.25, random_state=0, shuffle=True, stratify=y)
 
 #print(X_train.shape, y_train.shape)
 
 
 
+df1 = pd.DataFrame()
+for i in range (X_train.shape[0]):
+    df1 = pd.concat([df1, pd.DataFrame(X_train[i], index=None)], axis=0, ignore_index=True)
+scaler = scaler.fit(df1)
+for i in range (X_train.shape[0]):
+    X_train[i] = scaler.transform(X_train[i])
+for i in range(X_test.shape[0]):
+    X_test[i] = scaler.transform(X_test[i])
+
+
+
 from sklearn.preprocessing import OneHotEncoder
-
-
 enc = OneHotEncoder(handle_unknown='ignore', sparse=False)
-
 enc = enc.fit(y_train)
-
 y_train = enc.transform(y_train)
-#y_test = enc.transform(y_test)
+y_test = enc.transform(y_test)
 
 
 
@@ -92,7 +95,7 @@ model.add(
       )
     )
 )
-model.add(keras.layers.Dropout(rate=0.5))
+model.add(keras.layers.Dropout(rate=0.3))
 model.add(keras.layers.Dense(units=128, activation='relu'))
 model.add(keras.layers.Dense(y_train.shape[1], activation='softmax'))
 
@@ -105,11 +108,32 @@ model.compile(
 
 history = model.fit(
     X_train, y_train,
-    epochs=10,
+    epochs=50,
     batch_size=100,
     validation_split=0.1,
     shuffle=False
 )
 
 
-#model.evaluate(X_test, y_test)
+model.evaluate(X_test, y_test)
+
+y_pred = model.predict(X_test)
+
+#labels=['Walking', 'Jogging', 'Standing', 'Upstair', 'Downstair', 'Sitting', 'Car', 'Cycling']
+
+y_pred = np.float64(y_pred)
+rev_y_pred = enc.inverse_transform(y_pred)
+rev_y_test = enc.inverse_transform(y_test)
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(rev_y_test, rev_y_pred)
+
+
+cmtx = pd.DataFrame(
+    cm, 
+    index=['true:Walking', 'true:Jogging', 'true:Standing', 'true:Upstair', 'true:Downstair', 'true:Sitting', 'true:Sitting_Car', 'true:Cycling'], 
+    columns=['pred:Walking', 'pred:Jogging', 'pred:Standing', 'pred:Upstair', 'pred:Downstair', 'pred:Sitting', 'pred:Sitting_Car', 'pred:Cycling']
+)
+
+
+from sklearn.metrics import classification_report
+print(classification_report(rev_y_test, rev_y_pred))

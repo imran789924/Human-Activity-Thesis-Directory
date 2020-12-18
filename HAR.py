@@ -4,7 +4,7 @@ import pandas as pd
 
 
 #for dirpath, dirnames, filenames in os.walk('/home/imran/Desktop/Project HAR/DATASET'):
-for dirpath, dirnames, filenames in os.walk('/home/imran/Desktop/Project HAR/Sitting_final'):
+for dirpath, dirnames, filenames in os.walk('/home/imran/Desktop/Project HAR/DATASET/Walking_10Min'):
     
     
     for file in filenames:
@@ -35,7 +35,7 @@ for dirpath, dirnames, filenames in os.walk('/home/imran/Desktop/Project HAR/Sit
         if(len != 0):
             df2 = df2.iloc[ :end, :]
         
-        path = '/home/imran/Desktop/Project HAR/Sitting_final'
+        path = '/home/imran/Desktop/Project HAR/DATASET/Walking_10Min'
         
         path = os.path.join(path,  file+'.csv')
             
